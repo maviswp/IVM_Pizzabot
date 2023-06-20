@@ -1,1 +1,66 @@
+! python3 -m pip install pyTelegramBotAPI
+
+import telebot
+import nltk
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('averaged_perceptron_tagger')
+
+BOT_CONFIG = telebot.TeleBot('6003920531:AAGShQ5NzfyZOfuGj30uIslbzYXrTg0ZLZI')
+
+context = {}
+
+@BOT_CONFIG.message_handler(commands=['start'])
+def start_message(message):
+    context.clear()
+    BOT_CONFIG.send_message(message.chat.id, 'Привет! Как вас зовут?')
+
+@BOT_CONFIG.message_handler(content_types=['text'])
+def send_text(message):
+    response = process_message(message.text, context)
+    BOT_CONFIG.send_message(message.chat.id, response)
+
+def process_message(message, context):
+    words = nltk.word_tokenize(message)
+    tagged = nltk.pos_tag(words)
+
+    names = [word.lower() for (word, tag) in tagged if tag in ['NN', 'NNS']]
+
+    if 'name' not in context:
+        if names:
+            context['name'] = names[0]
+            response = 'Привет, {}! Какую вы хотите пиццу? Большую, среднюю или маленькую?'.format(context['name'])
+        else:
+            response = 'Как вас зовут?'
+    elif 'pizza' not in context:
+        if 'большую' in message.lower():
+            context['pizza'] = 'большую'
+            response = 'Как вы будете платить?'
+        elif 'среднюю' in message.lower():
+            context['pizza'] = 'среднюю'
+            response = 'Как вы будете платить?'
+        elif 'маленькую' in message.lower():
+            context['pizza'] = 'маленькую'
+            response = 'Как вы будете платить?'
+        else:
+            response = 'Какую вы хотите пиццу? Большую, среднюю или маленькую?'
+    elif 'oplata' not in context:
+        if 'наличкой' in message.lower():
+            context['oplata'] = 'наличкой'
+            response = 'Какой у вас адрес доставки?'
+        elif 'картой' in message.lower():
+            context['oplata'] = 'картой'
+            response = 'Какой у вас адрес доставки?'
+        else:
+            response = 'Как вы будете платить?'
+    elif 'address' not in context:
+        context['address'] = message
+        response = 'Вы хотите {}, оплата - {}, доставить по адресу {}?'.format(
+            context['pizza'], context['oplata'], context['address'])
+    else:
+        response = 'Спасибо за заказ!'
+
+    return response
+
+BOT_CONFIG.polling()
 
